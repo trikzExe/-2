@@ -25,19 +25,28 @@
 **Команда:**
 
 ```
-<текст команди>
+nc -C haproxy.org 80
 ```
 
 **Набраний запит:**
 
 ```
-<текст запиту, набраний з клавіатури, включно з порожнім рядком>
+GET / HTTP/1.1
+Host: haproxy.org
+Connection: close
 ```
 
 **Відповідь:**
 
 ```
-<повний текст відповіді>
+HTTP/1.1 301 Moved Permanently
+content-length: 0
+location: http://www.haproxy.org/
+alt-svc: h2=":443"; ma=3600
+alt-svc: h3=":443"; ma=3600
+set-cookie: served=1:TCP:IPv4
+connection: close
+
 ```
 
 ---
@@ -47,13 +56,23 @@
 **Команда:**
 
 ```
-<текст команди>
+printf 'GET / HTTP/1.1\r\nConnection: close\r\n\r\n' | nc haproxy.org 80
 ```
 
 **Вивід:**
 
 ```
-<повний вивід>
+HTTP/1.1 403 Forbidden
+content-length: 93
+cache-control: no-cache
+content-type: text/html
+set-cookie: served=1:TCP:IPv4
+connection: close
+
+<html><body><h1>403 Forbidden</h1>
+Request forbidden by administrative rules.
+</body></html>
+
 ```
 
 ---
@@ -65,13 +84,23 @@
 **Команда:**
 
 ```
-<текст команди>
+printf 'GET / HTTP/1.1\r\nHost: ietf.org\r\nConnection: close\r\n\r\n' | nc haproxy.org 80
 ```
 
 **Вивід:**
 
 ```
-<повний вивід>
+HTTP/1.1 400 Bad request
+content-length: 90
+cache-control: no-cache
+content-type: text/html
+set-cookie: served=1:TCP:IPv4
+connection: close
+
+<html><body><h1>400 Bad request</h1>
+Your browser sent an invalid request.
+</body></html>
+
 ```
 
 #### A.3.2. Неіснуюче ім'я в полі `Host`
@@ -79,13 +108,23 @@
 **Команда:**
 
 ```
-<текст команди>
+printf 'GET / HTTP/1.1\r\nHost: opism-pr02.invalid\r\nConnection: close\r\n\r\n' | nc haproxy.org 80
 ```
 
 **Вивід:**
 
 ```
-<повний вивід>
+HTTP/1.1 400 Bad request
+content-length: 90
+cache-control: no-cache
+content-type: text/html
+set-cookie: served=1:TCP:IPv4
+connection: close
+
+<html><body><h1>400 Bad request</h1>
+Your browser sent an invalid request.
+</body></html>
+
 ```
 
 #### A.3.3. Запит без поля `Host` у версії 1.0
@@ -93,13 +132,22 @@
 **Команда:**
 
 ```
-<текст команди>
+printf 'GET / HTTP/1.0\r\n\r\n' | nc haproxy.org 80
 ```
 
 **Вивід:**
 
 ```
-<повний вивід>
+HTTP/1.1 400 Bad request
+content-length: 90
+cache-control: no-cache
+content-type: text/html
+set-cookie: served=1:TCP:IPv4
+connection: close
+
+<html><body><h1>400 Bad request</h1>
+Your browser sent an invalid request.
+</body></html>
 ```
 
 Зведення результатів наведено в **Додатку Д**.
@@ -111,18 +159,32 @@
 **Команда:**
 
 ```
-<текст команди>
+printf 'GET /opism-pr02-12345 HTTP/1.1\r\nHost: haproxy.org\r\n\r\nGET / HTTP/1.1\r\nHost: haproxy.org\r\nConnection: close\r\n\r\n' | nc -C haproxy.org 80
 ```
 
 **Вивід:**
 
 ```
-<повний вивід>
+HTTP/1.1 301 Moved Permanently
+content-length: 0
+location: http://www.haproxy.org/opism-pr02-12345
+alt-svc: h2=":443"; ma=3600
+alt-svc: h3=":443"; ma=3600
+set-cookie: served=1:TCP:IPv4
+
+HTTP/1.1 301 Moved Permanently
+content-length: 0
+location: http://www.haproxy.org/
+alt-svc: h2=":443"; ma=3600
+alt-svc: h3=":443"; ma=3600
+set-cookie: served=1:TCP:IPv4
+connection: close
+
 ```
 
-**Кількість отриманих відповідей:**
+**Кількість отриманих відповідей: 2**
 
-**Коди стану отриманих відповідей:**
+**Коди стану отриманих відповідей: 301 Moved Permanently**
 
 ---
 
@@ -131,39 +193,80 @@
 **Команда:**
 
 ```
-<текст команди>
+curl -v --http1.1 http://haproxy.org/ -o /dev/null
 ```
 
 **Вивід:**
 
 ```
-<повний вивід>
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0* Host haproxy.org:80 was resolved.
+* IPv6: (none)
+* IPv4: 51.15.8.218
+*   Trying 51.15.8.218:80...
+* Connected to haproxy.org (51.15.8.218) port 80
+* using HTTP/1.x
+> GET / HTTP/1.1
+> Host: haproxy.org
+> User-Agent: curl/8.15.0
+> Accept: */*
+> 
+* Request completely sent off
+< HTTP/1.1 301 Moved Permanently
+< content-length: 0
+< location: http://www.haproxy.org/
+< alt-svc: h2=":443"; ma=3600
+< alt-svc: h3=":443"; ma=3600
+< set-cookie: served=1:TCP:IPv4
+< 
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+* Connection #0 to host haproxy.org left intact
+
 ```
 
 ---
 
 ### Завдання A.6. Запит через захищене з'єднання
 
-**Ресурс, на якому виконано завдання:** <власний домен / `iana.org`>
+**Ресурс, на якому виконано завдання:** <`haproxy.org` / `iana.org`>
 
 **Підстава для використання резервного ресурсу (заповнюють за потреби):**
 
 **Команда:**
 
 ```
-<текст команди>
+openssl s_client -connect haproxy.org:443 -servername haproxy.org -crlf -quiet
 ```
 
 **Набраний запит:**
 
 ```
-<текст запиту>
+GET / HTTP/1.1
+Host: haproxy.org
+Connection: close
 ```
 
 **Вивід:**
 
 ```
-<повний вивід>
+Connecting to 51.15.8.218
+depth=2 C=US, O=SSL Corporation, CN=SSL.com TLS RSA Root CA 2022
+verify return:1
+depth=1 C=US, O=SSL Corporation, CN=SSL.com TLS Issuing RSA CA R1
+verify return:1
+depth=0 CN=*.haproxy.org
+verify return:1
+
+HTTP/1.1 408 Request Time-out
+content-length: 110
+cache-control: no-cache
+connection: close
+content-type: text/html
+
+<html><body><h1>408 Request Time-out</h1>
+Your browser didn't send a complete request in time.
+</body></html>
 ```
 
 ---
